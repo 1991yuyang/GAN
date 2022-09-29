@@ -23,7 +23,8 @@ num_workers = 8
 label_smooth_eta = 0.1
 generator_feature_loss_weight = 0.5  # 真样本和假样本判别器特征间距离损失
 generator_bce_loss_weight = 0.5  # bce损失
-d_weight_range = [-0.5, 0.5]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
+use_discriminator_weight_clip = True
+d_weight_range = [-1.2, 1.2]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
 data_root_dir = r"/home/guest/yuyang/data/cartoon"
 generator_best_loss = float("inf")
 discriminator_criterion = DiscriminatorLoss(batch_size, noise_dim, label_smooth_eta).cuda(device_ids[0])
@@ -47,7 +48,8 @@ def train_epoch(discriminator, generator, train_loader, generator_criterion, dis
             if d_fake_accu <= discriminator_train_fake_accu_tresh:
                 d_loss.backward()
                 discriminator_optimizer.step()
-                discriminator = clip_d_weight(discriminator)
+                if use_discriminator_weight_clip:
+                    discriminator = clip_d_weight(discriminator)
             else:
                 discriminator_optimizer.zero_grad()
         for i in range(generator_train_times_every_step):
