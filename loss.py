@@ -47,8 +47,7 @@ class GeneratorLoss(nn.Module):
             with t.no_grad():
                 generator_output = generator(generator_input)  # [N, 3, img_size, img_size]
                 d_output_fake, features_fake = discriminator(generator_output)  # [N, 1]\
-                with t.no_grad():
-                    d_output_real, features_real = discriminator(true_img)
+                d_output_real, features_real = discriminator(true_img)
                 d_output_fake = d_output_fake.view((-1,))
                 loss_bce = self.bce(d_output_fake, t.ones([self.batch_size_half]).cuda(0) - self.label_smooth_eta)
                 loss_feature = 0

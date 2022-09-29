@@ -10,10 +10,10 @@ device_ids = list(range(len(CUDA_VISIBLE_DEVICES.split(","))))
 discriminator_train_times_every_step = 1  # 每一个step判别器训练的次数
 generator_train_times_every_step = 1  # 每一个step生成器训练的次数
 discriminator_train_fake_accu_tresh = 1  # 判别器在生成器生成的假数据上准确率低于此阈值则对判别器进行训练，否则不训练
-discriminator_init_lr = 0.01
-discriminator_final_lr = 0.0001
-generator_init_lr = 0.01
-generator_final_lr = 0.0001
+discriminator_init_lr = 0.001
+discriminator_final_lr = 0.00001
+generator_init_lr = 0.001
+generator_final_lr = 0.00001
 batch_size = 1024
 noise_dim = 16  # 产生的噪声的维度为[noise_dim, noise_dim]
 print_step = 10
@@ -23,8 +23,8 @@ num_workers = 8
 label_smooth_eta = 0.1
 generator_feature_loss_weight = 0.5  # 真样本和假样本判别器特征间距离损失
 generator_bce_loss_weight = 0.5  # bce损失
-use_discriminator_weight_clip = True
-d_weight_range = [-1.2, 1.2]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
+use_discriminator_weight_clip = False
+d_weight_range = [-0.1, 0.1]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
 data_root_dir = r"/home/guest/yuyang/data/cartoon"
 generator_best_loss = float("inf")
 discriminator_criterion = DiscriminatorLoss(batch_size, noise_dim, label_smooth_eta).cuda(device_ids[0])
@@ -103,7 +103,7 @@ def main():
     discriminator = Discriminator(img_size)
     discriminator = nn.DataParallel(module=discriminator, device_ids=device_ids)
     discriminator = discriminator.cuda(device_ids[0])
-    generator_optimizer = optim.RMSprop(params=generator.parameters(), lr=generator_init_lr)
+    generator_optimizer = optim.Adam(params=generator.parameters(), lr=generator_init_lr)
     discriminator_optimizer = optim.SGD(params=discriminator.parameters(), lr=discriminator_init_lr)
     lr_sch_generator = optim.lr_scheduler.CosineAnnealingLR(generator_optimizer, T_max=epoch, eta_min=generator_final_lr)
     lr_sch_discriminator = optim.lr_scheduler.CosineAnnealingLR(discriminator_optimizer, T_max=epoch, eta_min=discriminator_final_lr)
