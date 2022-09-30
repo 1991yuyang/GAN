@@ -11,20 +11,21 @@ discriminator_train_times_every_step = 1  # 每一个step判别器训练的次�
 generator_train_times_every_step = 1  # 每一个step生成器训练的次数
 discriminator_train_fake_accu_tresh = 1  # 判别器在生成器生成的假数据上准确率低于此阈值则对判别器进行训练，否则不训练
 discriminator_init_lr = 0.001
-discriminator_final_lr = 0.00001
+discriminator_final_lr = 0.0001
 generator_init_lr = 0.001
-generator_final_lr = 0.00001
-batch_size = 1024
+generator_final_lr = 0.0001
+batch_size = 512
 noise_dim = 16  # 产生的噪声的维度为[noise_dim, noise_dim]
 print_step = 10
-epoch = 1000
+epoch = 300
 img_size = 96
 num_workers = 8
 label_smooth_eta = 0.1
 generator_feature_loss_weight = 0.5  # 真样本和假样本判别器特征间距离损失
 generator_bce_loss_weight = 0.5  # bce损失
 use_discriminator_weight_clip = False
-d_weight_range = [-0.1, 0.1]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
+use_mnist = True  # 是否使用mnist手写数字数据集，如果使用则data_root_dir不起作用
+d_weight_range = [-0.2, 0.2]  # 对discriminator的网络权重进行裁剪，表示裁剪范围
 data_root_dir = r"/home/guest/yuyang/data/cartoon"
 generator_best_loss = float("inf")
 discriminator_criterion = DiscriminatorLoss(batch_size, noise_dim, label_smooth_eta).cuda(device_ids[0])
@@ -109,8 +110,8 @@ def main():
     lr_sch_discriminator = optim.lr_scheduler.CosineAnnealingLR(discriminator_optimizer, T_max=epoch, eta_min=discriminator_final_lr)
     for e in range(epoch):
         current_epoch = e + 1
-        train_loader = make_loader(data_root_dir, True, batch_size // 2, num_workers, img_size)
-        valid_loader = make_loader(data_root_dir, False, batch_size // 2, num_workers, img_size)
+        train_loader = make_loader(data_root_dir, True, batch_size // 2, num_workers, img_size, use_mnist)
+        valid_loader = make_loader(data_root_dir, False, batch_size // 2, num_workers, img_size, use_mnist)
         generator, discriminator = train_epoch(discriminator, generator, train_loader, generator_criterion, discriminator_criterion, generator_optimizer, discriminator_optimizer, current_epoch)
         generator, discriminator = valid_epoch(discriminator, generator, valid_loader, generator_criterion, discriminator_criterion, current_epoch)
         lr_sch_generator.step()

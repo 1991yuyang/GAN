@@ -8,7 +8,7 @@ import cv2
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 img_size = 96
 noise_dim = 16
-use_best_model = False
+use_best_model = True
 batch_size = 8
 
 

@@ -2,6 +2,7 @@ import torch as t
 from torch import nn
 import numpy as np
 from numpy import random as rd
+from torch.autograd import Variable as V
 
 
 class GeneratorLoss(nn.Module):
@@ -26,15 +27,14 @@ class GeneratorLoss(nn.Module):
             generator.train()
         else:
             generator.eval()
-        generator_input = t.from_numpy(rd.normal(0, 1, (self.batch_size_half, self.noise_dim ** 2))).type(t.FloatTensor).cuda(0)
-        generator_input = generator_input.view((self.batch_size_half, 1, self.noise_dim, self.noise_dim))
+        generator_input = t.from_numpy(rd.normal(0, 1, (self.batch_size_half * 2, self.noise_dim ** 2))).type(t.FloatTensor).cuda(0)
+        generator_input = generator_input.view((self.batch_size_half * 2, 1, self.noise_dim, self.noise_dim))
         if is_train:
             generator_output = generator(generator_input)  # [N, 3, img_size, img_size]
             d_output_fake, features_fake = discriminator(generator_output)  # [N, 1]
-            with t.no_grad():
-                d_output_real, features_real = discriminator(true_img)
+            d_output_real, features_real = discriminator(true_img)
             d_output_fake = d_output_fake.view((-1,))
-            loss_bce = self.bce(d_output_fake, t.ones([self.batch_size_half]).cuda(0) - self.label_smooth_eta)
+            loss_bce = self.bce(d_output_fake, V(t.ones([self.batch_size_half * 2]) - self.label_smooth_eta, requires_grad=False).cuda(0))
             loss_feature = 0
             for i in range(len(features_fake)):
                 feature_fake = features_fake[i]
@@ -49,7 +49,7 @@ class GeneratorLoss(nn.Module):
                 d_output_fake, features_fake = discriminator(generator_output)  # [N, 1]\
                 d_output_real, features_real = discriminator(true_img)
                 d_output_fake = d_output_fake.view((-1,))
-                loss_bce = self.bce(d_output_fake, t.ones([self.batch_size_half]).cuda(0) - self.label_smooth_eta)
+                loss_bce = self.bce(d_output_fake, V(t.ones([self.batch_size_half * 2]) - self.label_smooth_eta, requires_grad=False).cuda(0))
                 loss_feature = 0
                 for i in range(len(features_fake)):
                     feature_fake = features_fake[i]
@@ -88,27 +88,29 @@ class DiscriminatorLoss(nn.Module):
         generator_input = generator_input.view((self.batch_size_half, 1, self.noise_dim, self.noise_dim))
         with t.no_grad():
             generator_output = generator(generator_input)
-        concate_result = t.cat([true_img, generator_output], dim=0)
-        target = t.cat([t.ones([self.batch_size_half]) - self.label_smooth_eta, t.zeros([self.batch_size_half]) + self.label_smooth_eta], dim=0).cuda(0)
+        real_target = V((t.ones([self.batch_size_half]) - self.label_smooth_eta), requires_grad=False).cuda(0)
+        fake_target = V((t.zeros([self.batch_size_half]) + self.label_smooth_eta), requires_grad=False).cuda(0)
         if is_train:
-            discriminator_output, _ = discriminator(concate_result)
-            discriminator_output = discriminator_output.view((-1,))
-            loss = self.bce(discriminator_output, target)
-            d_real_accu = self.calc_accu(discriminator_output[:self.batch_size_half], target[:self.batch_size_half])
-            d_fake_accu = self.calc_accu(discriminator_output[self.batch_size_half:], target[self.batch_size_half:])
-            # loss_fake_part = t.mean(-t.log(1 - discriminator(generator_output) + 0.00000000001))
-            # loss_true_part = t.mean(-t.log(discriminator(true_img) + 0.00000000001))
-            # loss = (loss_fake_part + loss_true_part) / 2
+            discriminator_real_output, _ = discriminator(true_img)
+            discriminator_fake_output, _ = discriminator(generator_output)
+            discriminator_real_output = discriminator_real_output.view((-1,))
+            discriminator_fake_output = discriminator_fake_output.view((-1,))
+            loss_real = self.bce(discriminator_real_output, real_target)
+            loss_fake = self.bce(discriminator_fake_output, fake_target)
+            d_real_accu = self.calc_accu(discriminator_real_output, real_target)
+            d_fake_accu = self.calc_accu(discriminator_fake_output, fake_target)
+            loss = (loss_real + loss_fake) / 2
         else:
             with t.no_grad():
-                discriminator_output, _ = discriminator(concate_result)
-                discriminator_output = discriminator_output.view((-1,))
-                loss = self.bce(discriminator_output, target)
-                d_real_accu = self.calc_accu(discriminator_output[:self.batch_size_half], target[:self.batch_size_half])
-                d_fake_accu = self.calc_accu(discriminator_output[self.batch_size_half:], target[self.batch_size_half:])
-                # loss_fake_part = t.mean(-t.log(1 - discriminator(generator_output) + 0.00000000001))
-                # loss_true_part = t.mean(-t.log(discriminator(true_img) + 0.00000000001))
-                # loss = (loss_fake_part + loss_true_part) / 2
+                discriminator_real_output, _ = discriminator(true_img)
+                discriminator_fake_output, _ = discriminator(generator_output)
+                discriminator_real_output = discriminator_real_output.view((-1,))
+                discriminator_fake_output = discriminator_fake_output.view((-1,))
+                loss_real = self.bce(discriminator_real_output, real_target)
+                loss_fake = self.bce(discriminator_fake_output, fake_target)
+                d_real_accu = self.calc_accu(discriminator_real_output, real_target)
+                d_fake_accu = self.calc_accu(discriminator_fake_output, fake_target)
+                loss = (loss_real + loss_fake) / 2
         return loss, d_real_accu, d_fake_accu
 
     def calc_accu(self, d_output, target):
