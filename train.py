@@ -110,28 +110,28 @@ def main():
 
 
 if __name__ == "__main__":
-    epoch = 300
-    batch_size = 128
+    epoch = 50
+    batch_size = 256
     g_init_lr = 0.01
-    g_final_lr = 0.0001
+    g_final_lr = 0.001
     d_init_lr = 0.01
-    d_final_lr = 0.0001
-    feature_loss_weight = 0.5
-    bce_loss_weight = 0.5
+    d_final_lr = 0.001
+    feature_loss_weight = 0.75
+    bce_loss_weight = 0.25
     g_criterion = GeneratorLoss(feature_loss_weight=feature_loss_weight, bce_loss_weight=bce_loss_weight).cuda(device_ids[0])
     d_criterion = DiscriminatorLoss().cuda(device_ids[0])
     noise_dim = 128
     g_train_times_per_step = 1
     d_train_times_per_step = 1
     data_root_dir = r"F:\data\chapter7\data"
-    num_workers = 1
+    num_workers = 4
     print_step = 10
     img_channels = 3
-    img_size = 256
+    img_size = 96
     best_g_loss = float("inf")
     total_step = 1
     save_img_total_step = 500
-    img_count = 64
+    img_count = 25
     img_save_dir = r"images"
     row_img_count = np.sqrt(img_count).astype(int)
     if os.path.exists(img_save_dir):

@@ -8,7 +8,7 @@ act = {
     "linear": nn.Sequential,
     "sigmoid": nn.Sigmoid
 }
-generator_features = [128, 256, 512]
+generator_features = [64, 128]
 discriminator_features = generator_features[::-1]
 
 
