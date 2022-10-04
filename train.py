@@ -9,7 +9,7 @@ from utils import imgs_from_tensor
 import shutil
 import numpy as np
 import cv2
-CUDA_VISIBLE_DEVICES = "0,1"
+CUDA_VISIBLE_DEVICES = "0"
 os.environ["CUDA_VISIBLE_DEVICES"] = CUDA_VISIBLE_DEVICES
 device_ids = list(range(len(CUDA_VISIBLE_DEVICES.split(","))))
 
@@ -44,7 +44,7 @@ def train_epoch(g_criterion, d_criterion, g_optimizer, d_optimizer, train_loader
         if total_step % save_img_total_step == 0:
             generator.eval()
             with t.no_grad():
-                noise = t.from_numpy(rd.normal(0, 1, (img_count, noise_dim))).type(t.FloatTensor).cuda(device_ids[0])
+                noise = t.from_numpy(rd.normal(0, 1, (row_img_count ** 2, noise_dim))).type(t.FloatTensor).cuda(device_ids[0])
                 g_output = generator(noise)
                 cv2_imgs = imgs_from_tensor(g_output)
                 rows = []
@@ -123,8 +123,8 @@ if __name__ == "__main__":
     noise_dim = 128
     g_train_times_per_step = 1
     d_train_times_per_step = 1
-    data_root_dir = r"/home/guest/yuyang/data/cartoon"
-    num_workers = 8
+    data_root_dir = r"F:\data\chapter7\data"
+    num_workers = 1
     print_step = 10
     img_channels = 3
     img_size = 256
