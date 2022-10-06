@@ -14,7 +14,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = CUDA_VISIBLE_DEVICES
 device_ids = list(range(len(CUDA_VISIBLE_DEVICES.split(","))))
 
 
-
 def train_epoch(g_criterion, d_criterion, g_optimizer, d_optimizer, train_loader, generator, discriminator, current_epoch):
     global total_step
     steps = len(train_loader)
@@ -34,7 +33,7 @@ def train_epoch(g_criterion, d_criterion, g_optimizer, d_optimizer, train_loader
         for i_g in range(g_train_times_per_step):
             noise = t.from_numpy(rd.normal(0, 1, (batch_size, noise_dim))).type(t.FloatTensor).cuda(device_ids[0])
             fake_imgs_cuda = generator(noise)
-            g_loss = g_criterion(fake_imgs_cuda, discriminator, real_imgs_cuda)
+            g_loss = g_criterion(fake_imgs_cuda, discriminator, real_imgs_cuda, True)
             g_optimizer.zero_grad()
             g_loss.backward()
             g_optimizer.step()
@@ -68,13 +67,14 @@ def valid_epoch(g_criterion, d_criterion, generator, discriminator, valid_loader
     for real_imgs in valid_loader:
         real_imgs_cuda = real_imgs.cuda(device_ids[0])
         generator.eval()
+        discriminator.eval()
         with t.no_grad():
             noise = t.from_numpy(rd.normal(0, 1, (batch_size // 2, noise_dim))).type(t.FloatTensor).cuda(device_ids[0])
             fake_imgs_cuda = generator(noise)
             d_loss = d_criterion(fake_imgs_cuda, real_imgs_cuda, discriminator, False)
             noise = t.from_numpy(rd.normal(0, 1, (batch_size, noise_dim))).type(t.FloatTensor).cuda(device_ids[0])
             fake_imgs_cuda = generator(noise)
-            g_loss = g_criterion(fake_imgs_cuda, discriminator, real_imgs_cuda)
+            g_loss = g_criterion(fake_imgs_cuda, discriminator, real_imgs_cuda, False)
             accum_d_loss += d_loss.item()
             accum_g_loss += g_loss.item()
     avg_g_loss = accum_g_loss / steps
@@ -92,7 +92,7 @@ def main():
     generator = Generator(img_channels, noise_dim, img_size)
     generator = nn.DataParallel(module=generator, device_ids=device_ids)
     generator = generator.cuda(device_ids[0])
-    discriminator = Discriminator(img_channels, img_size)
+    discriminator = Discriminator(img_channels, img_size, is_pix_sup)
     discriminator = nn.DataParallel(module=discriminator, device_ids=device_ids)
     discriminator = discriminator.cuda(device_ids[0])
     g_optimizer = optim.Adam(params=generator.parameters(), lr=g_init_lr)
@@ -111,16 +111,16 @@ def main():
 
 if __name__ == "__main__":
     epoch = 50
-    batch_size = 256
+    batch_size = 64
     g_init_lr = 0.01
     g_final_lr = 0.001
     d_init_lr = 0.01
     d_final_lr = 0.001
-    feature_loss_weight = 0.75
-    bce_loss_weight = 0.25
-    g_criterion = GeneratorLoss(feature_loss_weight=feature_loss_weight, bce_loss_weight=bce_loss_weight).cuda(device_ids[0])
-    d_criterion = DiscriminatorLoss().cuda(device_ids[0])
-    noise_dim = 128
+    feature_loss_weight = 0.2
+    bce_loss_weight = 0
+    dist_loss_weight = 0.4
+    ls_loss_weight = 0.4
+    noise_dim = 32
     g_train_times_per_step = 1
     d_train_times_per_step = 1
     data_root_dir = r"F:\data\chapter7\data"
@@ -130,9 +130,13 @@ if __name__ == "__main__":
     img_size = 96
     best_g_loss = float("inf")
     total_step = 1
-    save_img_total_step = 500
+    save_img_total_step = 1000
     img_count = 25
+    is_pix_sup = True
+    label_smooth = 0.1
     img_save_dir = r"images"
+    g_criterion = GeneratorLoss(feature_loss_weight=feature_loss_weight, bce_loss_weight=bce_loss_weight, dist_loss_weight=dist_loss_weight, ls_loss_weight=ls_loss_weight).cuda(device_ids[0])
+    d_criterion = DiscriminatorLoss(label_smooth=label_smooth).cuda(device_ids[0])
     row_img_count = np.sqrt(img_count).astype(int)
     if os.path.exists(img_save_dir):
         shutil.rmtree(img_save_dir)
