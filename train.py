@@ -146,7 +146,7 @@ if __name__ == "__main__":
     discriminator_weight_min = -0.01
     discriminator_weight_max = 0.01
     use_cnn = True
-    generator_features = [256, 256, 256, 256, 256, 256]
+    generator_features = [1024, 512, 256, 128, 64, 32, 16]
     discriminator_features = generator_features[::-1]
     img_save_dir = r"images"
     g_criterion = GeneratorLoss().cuda(device_ids[0])
