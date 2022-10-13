@@ -3,5 +3,5 @@
 ## Data Preparation  
 data_root_dir  
 > train  
-    val  
+val  
 ## Hyper Parameters  
