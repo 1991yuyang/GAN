@@ -11,6 +11,7 @@ data_root_dir
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.jpg  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;......  
 ## Hyper Parameters  
+CUDA_VISIBLE_DEVICES: specify which GPUs to use, for example "0,1"  
 epoch: number of training iterations  
 batch_size: sample batch size of one training step 
 g_init_lr: initial learning rate of generator 
