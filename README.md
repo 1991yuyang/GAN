@@ -29,4 +29,6 @@ discriminator_weight_min: min value of weight of discriminator
 discriminator_weight_max: max  value of weight of discriminator  
 use_cnn: if specified as True, the convolution neural network is used, otherwise the MLP is used  
 generator_features: channels of every layer of generator if use_cnn is True, number of neurons of every layer if use_cnn is False  
-img_save_dir: storage directory for generated images
+img_save_dir: storage directory for generated images  
+## Train
+`python train.py`  
