@@ -3,5 +3,8 @@
 ## Data Preparation  
 data_root_dir  
 > train  
+> >1.jpg
+> >2.jpg
+> >3.jpg
 val  
 ## Hyper Parameters  
